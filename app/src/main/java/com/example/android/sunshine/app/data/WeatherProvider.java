@@ -23,8 +23,10 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
+import android.util.Log;
 
 public class WeatherProvider extends ContentProvider {
+    private final String LOG_TAG = WeatherProvider.class.getSimpleName();
 
     // The URI Matcher used by this content provider.
     private static final UriMatcher sUriMatcher = buildUriMatcher();
@@ -317,25 +319,37 @@ public class WeatherProvider extends ContentProvider {
 
     @Override
     public int bulkInsert(Uri uri, ContentValues[] values) {
+        Log.d(LOG_TAG, "bulkInsert start");
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         final int match = sUriMatcher.match(uri);
         switch (match) {
             case WEATHER:
+                Log.d(LOG_TAG, "WEATHER bulkInsert");
                 db.beginTransaction();
                 int returnCount = 0;
                 try {
                     for (ContentValues value : values) {
                         normalizeDate(value);
+                        if (value.containsKey(WeatherContract.WeatherEntry.COLUMN_DATE)) {
+                            long dateValue = value.getAsLong(WeatherContract.WeatherEntry.COLUMN_DATE);
+                            Log.d(LOG_TAG, "DATE" + dateValue);
+                        }
+                        if (value.containsKey(WeatherContract.WeatherEntry.COLUMN_MAX_TEMP)) {
+                            int maxTemp = value.getAsInteger(WeatherContract.WeatherEntry.COLUMN_MAX_TEMP);
+                            Log.d(LOG_TAG, "DATE" + maxTemp);
+                        }
                         long _id = db.insert(WeatherContract.WeatherEntry.TABLE_NAME, null, value);
                         if (_id != -1) {
                             returnCount++;
                         }
+                        Log.d(LOG_TAG, "Count" + returnCount);
                     }
                     db.setTransactionSuccessful();
                 } finally {
                     db.endTransaction();
                 }
                 getContext().getContentResolver().notifyChange(uri, null);
+                Log.d(LOG_TAG, "WEATHER bulkInsert return");
                 return returnCount;
             default:
                 return super.bulkInsert(uri, values);
